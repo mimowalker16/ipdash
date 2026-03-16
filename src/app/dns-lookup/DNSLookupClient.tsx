@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { DnsResult } from "@/lib/dnsLookup";
 import DNSTable from "@/components/DNSTable";
 import AdSlot from "@/components/AdSlot";
@@ -13,11 +13,18 @@ export default function DNSLookupClient() {
   const [result, setResult] = useState<DnsResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Track whether a lookup has been run at least once so we can auto-re-run on type change.
+  const hasLookedUp = useRef(false);
 
-  async function handleLookup(e: React.FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    if (!hasLookedUp.current) return;
     const d = domain.trim();
     if (!d) return;
+    runLookup(d);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type]);
+
+  async function runLookup(d: string) {
     setLoading(true);
     setError(null);
     setResult(null);
@@ -33,6 +40,14 @@ export default function DNSLookupClient() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleLookup(e: React.FormEvent) {
+    e.preventDefault();
+    const d = domain.trim();
+    if (!d) return;
+    hasLookedUp.current = true;
+    runLookup(d);
   }
 
   return (
